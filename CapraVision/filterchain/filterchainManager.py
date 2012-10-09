@@ -12,5 +12,5 @@ class FilterchainManager:
     def setCurrentFc(self, filter):
         self.currentFc = filter
     
-    def save_chain_as(self):
+    def run(self):
         pass

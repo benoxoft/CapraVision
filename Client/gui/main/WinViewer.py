@@ -21,7 +21,7 @@ from gi.repository import GObject
 
 from gui.utils import *
 
-from CapraVision import chain
+from CapraVision import filterchain
 from CapraVision import sources
 
 class WinViewer():
@@ -71,7 +71,7 @@ class WinViewer():
             sources.close_source(self.source)
         if new_source <> None:
             self.source = sources.create_source(new_source)
-            self.thread = chain.ThreadMainLoop(self.source, 1/30.0)
+            self.thread = filterchain.ThreadMainLoop(self.source, 1/30.0)
             self.thread.add_observer(self.thread_observer)
             self.thread.start()
         else:

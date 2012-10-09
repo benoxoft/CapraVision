@@ -19,9 +19,9 @@
 
 from gui.utils import *
 
-from CapraVision import chain
 from CapraVision import sources
 from CapraVision import filters
+from CapraVision import filterchain 
 
 from WinFilterSel import WinFilterSel
 from WinViewer import WinViewer
@@ -51,6 +51,8 @@ class WinFilterChain:
         self.filterChainListStore = ui.get_object('filterChainListStore')
         self.set_state_empty()
         self.change_state()
+        
+        self.fcmanager = filterchain.FilterchainManager()
 
     def add_window_to_list(self, win):
         self.win_list.append(win.window)
@@ -66,7 +68,7 @@ class WinFilterChain:
 
     def del_current_row(self):
         (model, iter) = self.lstFilters.get_selection().get_selected()
-        self.chain.remove_filter(self.selected_filter())
+        self.fcmanager.getCurrentFc().remove_filter(self.selected_filter())
         
     def filter_modif_callback(self):
         self.set_state_modified()
@@ -127,7 +129,7 @@ class WinFilterChain:
         elif self.state == WindowState.Create:
             return self.save_chain_as()
         else:
-            chain.write(self.txtFilterChain.get_text(), self.chain)
+            fcmanager.getCurrentFc().write(self.txtFilterChain.get_text(), self.chain)
             self.set_state_show()
             return True
 
@@ -145,11 +147,10 @@ class WinFilterChain:
         if response == Gtk.ResponseType.OK:
             if not fname.endswith('.filterchain'):
                 fname += '.filterchain'
-            chain.write(fname, self.chain)
+            filterchain.chain.write(fname, self.fcmanager.getCurrentFc())
             self.txtFilterChain.set_text(fname)
             self.set_state_show()
             return True
-        else:
             return False
 
     def selected_filter(self):
@@ -157,7 +158,7 @@ class WinFilterChain:
         if iter is None:
             return None
         path = model.get_path(iter)
-        return self.chain.filters[path.get_indices()[0]]
+        return self.fcmanager.getCurrentFc().filters[path.get_indices()[0]]
     
     def set_state_create(self):
         self.state = WindowState.Create
@@ -191,7 +192,7 @@ class WinFilterChain:
     
     def show_filter_chain(self):
         self.filterChainListStore.clear()
-        for filter in self.chain.filters:
+        for filter in self.fcmanager.getCurrentFc().filters:
             self.filterChainListStore.append(
                         [filter.__class__.__name__, filter.__doc__]) 
 
@@ -200,8 +201,8 @@ class WinFilterChain:
             return
         for win in list(self.win_list):
             win.destroy()
-        self.chain = chain
-        self.chain.add_filter_observer(self.filters_changed_observer)
+        self.fcmanager.setCurrentFc(chain)
+        self.fcmanager.getCurrentFc().add_filter_observer(self.filters_changed_observer)
         self.show_filter_chain()
                                                                                     
     def on_btnNew_clicked(self, widget):
@@ -214,7 +215,7 @@ class WinFilterChain:
                 pass
             elif result == Gtk.ResponseType.CANCEL:
                 return
-        self.use_new_chain(chain.FilterChain())
+        self.use_new_chain(filterchain.FilterChain())
         self.set_state_create()
 
     def on_btnOpen_clicked(self, widget):
@@ -236,7 +237,7 @@ class WinFilterChain:
         dialog.set_filter(ff)
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            c = chain.read(dialog.get_filename())
+            c = filterchain.chain.read(dialog.get_filename())
             if c is not None:
                 self.use_new_chain(c)
                 self.txtFilterChain.set_text(dialog.get_filename())
@@ -250,7 +251,7 @@ class WinFilterChain:
         self.save_chain_as()
 
     def on_btnView_clicked(self, widget):
-        win = WinViewer(self.chain)
+        win = WinViewer(self.fcmanager.getCurrentFc())
         win.window.connect('destroy', self.on_window_destroy)
         self.add_window_to_list(win)
         win.window.show_all()
@@ -258,7 +259,7 @@ class WinFilterChain:
     def on_btnAdd_clicked(self, widget):
         win = WinFilterSel()
         if win.window.run() == Gtk.ResponseType.OK:
-            self.chain.add_filter(win.selected_filter())
+            self.fcmanager.getCurrentFc().add_filter(win.selected_filter())
             self.set_state_modified()
         win.window.destroy()
             
