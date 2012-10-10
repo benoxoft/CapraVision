@@ -26,7 +26,7 @@ import time
 import traceback
 
 from threading import Thread
- 
+from CapraVision import filterchain
 
 class HandlerContainer (object):
     instance = None       # Singleton
@@ -88,6 +88,9 @@ class Server:
 
 if __name__ == '__main__':
     PORT=5030
+    print "Loading filterchain manager"
+    fcmanager = filterchain.FilterchainManager()
+    
     server = Server()
     t = Thread(target=server.start, args=(PORT,))
     t.start()
