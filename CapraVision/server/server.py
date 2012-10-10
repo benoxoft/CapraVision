@@ -28,69 +28,66 @@ import traceback
 from threading import Thread
 from CapraVision import filterchain
 
-class HandlerContainer (object):
-    instance = None       # Singleton
-    def __new__(theClass): 
-        "methode de construction standard en Python"
-        if theClass.instance is None:
-            theClass.handlers = []
-            theClass.instance = object.__new__(theClass)
-        return theClass.instance
-    
-    def addHandler(self, handler):
-        self.handlers.append(handler)        
-
-class VisionClientHandler(SocketServer.BaseRequestHandler):
-
-    def __init__(self, request, client_address, server):
-        HandlerContainer().addHandler(self)
-        SocketServer.BaseRequestHandler.__init__(self, request, client_address, server)
-
-    def handle(self):
-        # TODO add a try catch and return stack trace to socket
-        # http://docs.python.org/library/traceback.html
-        while 1:
-            try:
-                self.data = self.request.recv(1024)
-                #print "Received: " + self.data    
-                # just send back the same data, but upper-cased
-                # self.request.sendall(self.data.upper())
-            except:
-                traceback.print_exc(file=sys.stdout)
-                message = "Invalid command"
-
-class ReusableTCPServer(SocketServer.TCPServer):
-    allow_reuse_address = True
-
-
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, ReusableTCPServer):
-        pass
+BUFFER_SIZE = 1024  # Normally 1024, but we want fast response
     
 class Server:
-    def start(self, PORT):
-        self.server = ThreadedTCPServer( ("", PORT), VisionClientHandler)
-        print "starting server on port " + str(PORT) + "..."
-        try:
-            self.server.serve_forever()
-        except KeyboardInterrupt:
-            self.server.shutdown() 
-            print "server stopped"
+    
+    def __init__(self):
+        self.handlers = []
+    
+    def start(self, ip, port):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        s.bind((ip, port))
+        print "Server awaiting connections on port " + str(port)
+        
+        self.done = False
+        
+        while not self.done:
+            s.listen(1)
+            conn, addr = s.accept()
+            print 'Connected to:', addr
+            handler = ClientHandler(conn)
+            self.handlers.append(handler)
+            t = Thread(target=handler.handle)
+            t.start()           
+
             
     def stop(self):
-        self.server.shutdown()
+        self.done = True
         
     def send(self, data):
-        handlerContainer = HandlerContainer()
-        print "Sending: " + data
-        for handler in handlerContainer.handlers:
-            #manage disconnection here
-            handler.request.send(data)
+        for handler in self.handlers:
+            handler.send(data)
+    
+class ClientHandler:
+    
+    def __init__(self, conn):
+        self.done = False
+        self.conn = conn
+    
+    def handle(self):
+        while not self.done:
+            data = self.conn.recv(BUFFER_SIZE)
+            if not data: break
+            print "received data:", data
+            self.conn.send(data)  # echo
+            self.conn.close()
+            
+    def stop(self):
+        self.done = True
+        
+    def send(self, data):
+        self.conn.send(data)
 
 if __name__ == '__main__':
     PORT=5030
+    IP="127.0.0.1"
     print "Loading filterchain manager"
     fcmanager = filterchain.FilterchainManager()
     
     server = Server()
-    t = Thread(target=server.start, args=(PORT,))
+    t = Thread(target=server.start, args=(IP, PORT,))
     t.start()
+    
+    
