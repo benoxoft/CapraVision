@@ -18,3 +18,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from utils import *
+import os
+
+for f in os.listdir(os.path.dirname(__file__)):
+    file, _ = os.path.splitext(f)
+    code = 'from %(module)s import *' % {'module' : file} 
+    exec code

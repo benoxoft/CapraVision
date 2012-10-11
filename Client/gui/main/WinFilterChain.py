@@ -134,7 +134,7 @@ class WinFilterChain:
         elif self.state == WindowState.Create:
             return self.save_chain_as()
         else:
-            fcmanager.getCurrentFc().write(self.txtFilterChain.get_text(), self.chain)
+            fcmanager....self.txtFilterChain.get_text()
             self.set_state_show()
             return True
 

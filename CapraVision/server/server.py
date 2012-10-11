@@ -19,16 +19,9 @@
 """ 
 """
 
-import SocketServer
 import socket
-import sys
-import time
-import traceback
 
 from threading import Thread
-from CapraVision import filterchain
-
-import interface
 
 class Server:
     
@@ -36,8 +29,6 @@ class Server:
         self.handlers = []
     
     def start(self, ip, port):
-        
-        self.interface = interface.ServerInterface()
         
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -49,7 +40,7 @@ class Server:
             s.listen(1)
             conn, addr = s.accept()
             print 'Connected to:', addr
-            handler = ClientHandler(conn, self.interface)
+            handler = ClientHandler(conn, self.visionControlCallback)
             self.handlers.append(handler)
             t = Thread(target=handler.handle)
             t.start()           
@@ -61,20 +52,26 @@ class Server:
     def send(self, data):
         for handler in self.handlers:
             handler.send(data)
+            
+    def register(self, callback):
+        self.visionControlCallback = callback
+        
+    def notifyCallback(self, data):
+        self.visionControlCallback(data)
     
 class ClientHandler:
     
-    def __init__(self, conn, interface):
+    def __init__(self, conn, callback):
         self.done = False
         self.conn = conn
-        self.interface = interface
+        self.callback = callback
     
     def handle(self):
         while not self.done:
             data = self.conn.recv(1024)
             if not data: 
                 break
-            self.interface.parseData(data)
+            self.callback(data)
             #self.conn.send(data)  # echo
             #self.conn.close()
             
@@ -83,13 +80,5 @@ class ClientHandler:
         
     def send(self, data):
         self.conn.send(data)
-
-if __name__ == '__main__':
-    PORT=5030
-    IP="127.0.0.1"
-
-    server = Server()
-    t = Thread(target=server.start, args=(IP, PORT,))
-    t.start()
     
     
