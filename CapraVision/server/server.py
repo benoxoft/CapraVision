@@ -28,26 +28,28 @@ import traceback
 from threading import Thread
 from CapraVision import filterchain
 
-BUFFER_SIZE = 1024  # Normally 1024, but we want fast response
-    
+import interface
+
 class Server:
     
     def __init__(self):
         self.handlers = []
     
     def start(self, ip, port):
+        
+        self.interface = interface.ServerInterface()
+        
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         s.bind((ip, port))
         print "Server awaiting connections on port " + str(port)
         
         self.done = False
-        
         while not self.done:
             s.listen(1)
             conn, addr = s.accept()
             print 'Connected to:', addr
-            handler = ClientHandler(conn)
+            handler = ClientHandler(conn, self.interface)
             self.handlers.append(handler)
             t = Thread(target=handler.handle)
             t.start()           
@@ -62,17 +64,19 @@ class Server:
     
 class ClientHandler:
     
-    def __init__(self, conn):
+    def __init__(self, conn, interface):
         self.done = False
         self.conn = conn
+        self.interface = interface
     
     def handle(self):
         while not self.done:
-            data = self.conn.recv(BUFFER_SIZE)
-            if not data: break
-            print "received data:", data
-            self.conn.send(data)  # echo
-            self.conn.close()
+            data = self.conn.recv(1024)
+            if not data: 
+                break
+            self.interface.parseData(data)
+            #self.conn.send(data)  # echo
+            #self.conn.close()
             
     def stop(self):
         self.done = True
@@ -83,9 +87,7 @@ class ClientHandler:
 if __name__ == '__main__':
     PORT=5030
     IP="127.0.0.1"
-    print "Loading filterchain manager"
-    fcmanager = filterchain.FilterchainManager()
-    
+
     server = Server()
     t = Thread(target=server.start, args=(IP, PORT,))
     t.start()

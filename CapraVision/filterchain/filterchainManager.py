@@ -9,8 +9,8 @@ class FilterchainManager:
     def getCurrentFc(self):
         return self.currentFc
     
-    def setCurrentFc(self, filter):
-        self.currentFc = filter
+    def setCurrentFc(self, filterchain):
+        self.currentFc = filterchain
     
     def run(self):
         pass

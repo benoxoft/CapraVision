@@ -26,6 +26,8 @@ from CapraVision import filterchain
 from WinFilterSel import WinFilterSel
 from WinViewer import WinViewer
 
+import socket
+
 class WinFilterChain:
     """Main window
     Allow the user to create, edit and test filter chains
@@ -51,6 +53,9 @@ class WinFilterChain:
         self.filterChainListStore = ui.get_object('filterChainListStore')
         self.set_state_empty()
         self.change_state()
+        
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect(("127.0.0.1", 5030))
         
         self.fcmanager = filterchain.FilterchainManager()
 
