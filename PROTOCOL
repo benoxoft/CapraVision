@@ -1,0 +1,37 @@
+This file describes the communication protocol between the client and the server. It consists of a command followed by parameters. The string must end with a \n.
+
+=== Protocol ===
+
+SET
+	OID=[filterchain/filterchain:filter/input]
+	PID=[property/"position"/"active"]
+	VALUE=[int/float/boolean]
+	
+INFO
+	OID=[filterchain/filterchain:filter/input/"all"]
+	PID=[property/"active"/"all"]
+	
+CREATE
+	OBJECT=["input"/"filter"/"filterchain"]
+	TYPE=[input_type/filter_type/]   Note:This field is optional
+	ID=[id]
+
+SAVE
+	OID=["input"/"filterchain"]
+	
+=== Examples ===
+
+Create a filterchain and a filter
+	CREATE TYPE=filterchain ID=my_filterchain
+	CREATE TYPE=filter TYPE=GRAYSCALE2RGB ID=my_g2r
+	
+Add the filter
+	SET OID=my_filterchain:my_g2r PID=active VALUE=true
+
+Activate a source (defined in config file)
+	SET OID=my_camera PID=active VALUE=true
+	
+Activate the filterchain
+	SET OID=my_filterchain PID=active VALUE=true
+
+
