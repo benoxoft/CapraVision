@@ -1,0 +1,7 @@
+from utils import *
+from implementation import *
+
+for f in os.listdir(os.path.dirname(__file__)):
+    file, _ = os.path.splitext(f)
+    code = 'from %(module)s import *' % {'module' : file} 
+    exec code
